@@ -1,0 +1,104 @@
+# ---
+# apiVersion: argoproj.io/v1alpha1
+# kind: ApplicationSet
+# metadata:
+#   annotations:
+#     argocd.argoproj.io/sync-wave: "0"
+#   name: cluster1
+#   namespace: argocd-system
+# spec:
+#   generators:
+#   - git:
+#       files:
+#       - path: apps/**/development/config.json
+#       repoURL: https://github.com/danielinclouds/argocd-test1.git
+#       requeueAfterSeconds: 20
+#       revision: ""
+#       template:
+#         metadata: {}
+#         spec:
+#           destination: {}
+#           project: ""
+#           source:
+#             repoURL: ""
+#   - git:
+#       files:
+#       - path: apps/**/development/config_dir.json
+#       repoURL: https://github.com/danielinclouds/argocd-test1.git
+#       requeueAfterSeconds: 20
+#       revision: ""
+#       template:
+#         metadata: {}
+#         spec:
+#           destination: {}
+#           project: ""
+#           source:
+#             directory:
+#               exclude: '{{ exclude }}'
+#               include: '{{ include }}'
+#               jsonnet: {}
+#               recurse: true
+#             repoURL: ""
+#   syncPolicy: {}
+#   template:
+#     metadata:
+#       labels:
+#         app.kubernetes.io/managed-by: argocd-autopilot
+#         app.kubernetes.io/name: '{{ appName }}'
+#       name: development-{{ userGivenName }}
+#       namespace: argocd
+#     spec:
+#       destination:
+#         namespace: '{{ destNamespace }}'
+#         server: '{{ destServer }}'
+#       ignoreDifferences:
+#       - group: argoproj.io
+#         jsonPointers:
+#         - /status
+#         kind: Application
+#       project: development
+#       source:
+#         path: '{{ srcPath }}'
+#         repoURL: '{{ srcRepoURL }}'
+#         targetRevision: '{{ srcTargetRevision }}'
+#       syncPolicy:
+#         automated:
+#           allowEmpty: true
+#           prune: true
+#           selfHeal: true
+# status: {}
+
+
+---
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: infra
+  namespace: argocd-system
+spec:
+  generators:
+  - git:
+      repoURL: https://github.com/danielinclouds/platform-infra.git
+      revision: HEAD
+      directories:
+      - path: infra/*
+  template:
+    metadata:
+      # name: '{{path[0]}}'
+      name: '{{path.basename}}'
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/danielinclouds/platform-infra.git
+        targetRevision: HEAD
+        path: '{{path}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{path.basename}}'
+      syncPolicy:
+        automated:
+          allowEmpty: true
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
